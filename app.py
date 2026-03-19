@@ -1,3 +1,5 @@
+"""Streamlit app for validating and analyzing ads.txt-style files."""
+
 import streamlit as st
 import pandas as pd
 import requests
@@ -14,6 +16,25 @@ st.set_page_config(
 # --- Helper Functions ---
 
 def clean_url(url):
+    """Normalizes a user-provided URL or domain into a hostname string.
+
+    Args:
+        url (str | None): A raw domain or URL entered by the user. If the value
+            is falsy, the function returns ``None``.
+
+    Returns:
+        str | None: The extracted network location for a valid URL, the parsed
+        path when a netloc is unavailable, or ``None`` when no input is
+        provided.
+
+    Examples:
+        >>> clean_url("example.com")
+        'example.com'
+        >>> clean_url("https://sub.example.com/path")
+        'sub.example.com'
+        >>> clean_url("")
+        None
+    """
     if not url: return None
     if not url.startswith(('http://', 'https://')): url = 'https://' + url
     try:
@@ -23,12 +44,30 @@ def clean_url(url):
         return url
 
 def parse_line_data(line):
-    # Returns structured dict or None if empty
+    """Parses a single ads.txt or app-ads.txt line into structured metadata.
+
+    Args:
+        line (str): A single raw line from the uploaded or fetched text file.
+            The line may contain comments introduced by ``#``.
+
+    Returns:
+        dict[str, str | bool] | None: A dictionary containing normalized record
+        fields, the original and cleaned line text, and an error flag. Returns
+        ``None`` when the line is empty after removing inline comments and
+        surrounding whitespace.
+
+    Examples:
+        >>> parse_line_data("google.com, pub-123, DIRECT, f08c47fec0942fa0")
+        {'domain': 'google.com', 'pub_id': 'pub-123', 'type': 'DIRECT', 'auth_id': 'f08c47fec0942fa0', 'raw': 'google.com, pub-123, DIRECT, f08c47fec0942fa0', 'clean': 'google.com, pub-123, DIRECT, f08c47fec0942fa0', 'is_error': False}
+        >>> parse_line_data("# comment only")
+        None
+    """
+    # Ignore trailing comments before validating field structure.
     clean = line.split('#')[0].strip()
     if not clean: return None
     parts = [p.strip() for p in clean.split(',')]
     
-    # Basic Validation
+    # Records must include the first three fields and use a supported type.
     is_valid_fmt = len(parts) >= 3
     is_valid_type = False
     if is_valid_fmt:
@@ -45,6 +84,24 @@ def parse_line_data(line):
     }
 
 def analyze_text(content):
+    """Analyzes file content and classifies each line for the UI.
+
+    Args:
+        content (str): The full text content of an ads.txt or app-ads.txt file.
+
+    Returns:
+        tuple[list[dict[str, int | str]], list[dict[str, int | str]], dict[str, int], list[str]]:
+            A four-item tuple containing:
+
+            * Per-line status metadata for the code view.
+            * Structured valid records for conversion into a pandas DataFrame.
+            * Aggregate validation statistics.
+            * Human-readable warnings for errors and duplicates.
+
+    Examples:
+        >>> analyze_text("google.com, pub-1, DIRECT\\ngoogle.com, pub-1, DIRECT")
+        ([{'num': 1, 'text': 'google.com, pub-1, DIRECT', 'status': 'valid'}, {'num': 2, 'text': 'google.com, pub-1, DIRECT', 'status': 'duplicate'}], [{'Line': 1, 'Domain': 'google.com', 'Publisher ID': 'pub-1', 'Type': 'DIRECT', 'Authority ID': ''}], {'valid': 1, 'errors': 0, 'duplicates': 1, 'direct': 1, 'reseller': 0}, ['Line 2: Duplicate record'])
+    """
     lines = content.splitlines()
     data_objects = []
     seen_keys = set()
@@ -57,12 +114,13 @@ def analyze_text(content):
     for idx, line in enumerate(lines, 1):
         parsed = parse_line_data(line)
         
-        # Keep comments/empty lines in output but skip analysis
+        # Preserve comments and blank lines in the editor while excluding them
+        # from validation metrics and the structured data grid.
         if not parsed:
             output_lines.append({'num': idx, 'text': line, 'status': 'neutral'})
             continue
 
-        # Check Logic
+        # Use domain, publisher ID, and relationship type to detect duplicates.
         unique_key = f"{parsed['domain']}_{parsed['pub_id']}_{parsed['type']}".lower()
         is_dup = unique_key in seen_keys
         
@@ -81,7 +139,7 @@ def analyze_text(content):
             elif parsed['type'] == 'RESELLER': stats['reseller'] += 1
             seen_keys.add(unique_key)
             
-            # Add to structured data for DataFrame
+            # Only unique, valid records appear in the data grid export.
             data_objects.append({
                 'Line': idx,
                 'Domain': parsed['domain'],
