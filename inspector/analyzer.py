@@ -1,4 +1,4 @@
-"""Parsing and analysis logic for ads.txt-style files."""
+"""Core parsing and validation helpers for ads.txt-style content."""
 
 from urllib.parse import urlparse
 
@@ -6,7 +6,7 @@ VALID_TYPES = {"DIRECT", "RESELLER"}
 
 
 def clean_url(url):
-    """Normalize user input into a domain string."""
+    """Normalize user input to a domain used for fetch URLs."""
     if not url:
         return None
     if not url.startswith(("http://", "https://")):
@@ -19,7 +19,7 @@ def clean_url(url):
 
 
 def parse_line_data(line):
-    """Parse a single ads.txt line into a structured record."""
+    """Parse one line into a normalized record plus validation status."""
     clean = line.split("#")[0].strip()
     if not clean:
         return None
@@ -40,7 +40,7 @@ def parse_line_data(line):
 
 
 def analyze_text(content):
-    """Analyze ads.txt content and return display metadata and statistics."""
+    """Return per-line status, unique records, summary stats, and warnings."""
     lines = content.splitlines()
     data_objects = []
     seen_keys = {}

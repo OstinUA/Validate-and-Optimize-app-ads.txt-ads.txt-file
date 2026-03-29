@@ -1,4 +1,4 @@
-"""Rendering helpers for Streamlit HTML/CSS snippets."""
+"""UI rendering helpers for templated HTML and static CSS."""
 
 from pathlib import Path
 
@@ -12,19 +12,19 @@ def _read_file(path: Path) -> str:
 
 
 def load_css() -> str:
-    """Return CSS wrapped in a style tag for Streamlit markdown."""
+    """Load stylesheet content and wrap it for Streamlit markdown injection."""
     css = _read_file(ASSETS_DIR / "css" / "styles.css")
     return f"<style>{css}</style>"
 
 
 def render_result_header(domain: str) -> str:
-    """Render the results heading from HTML template."""
+    """Render the result heading with the active domain label."""
     template = _read_file(TEMPLATES_DIR / "result_header.html")
     return template.format(domain=domain)
 
 
 def render_metrics(stats: dict) -> str:
-    """Render metrics summary boxes from HTML template."""
+    """Render metric cards from the metrics template."""
     template = _read_file(TEMPLATES_DIR / "metrics.html")
     return template.format(
         valid=stats["valid"],
@@ -35,7 +35,7 @@ def render_metrics(stats: dict) -> str:
 
 
 def render_logs(logs: list[dict]) -> str:
-    """Render issue log entries in HTML format."""
+    """Render warning/error entries for the log panel."""
     if not logs:
         return "<div class='log-container'><div class='log-success'>No issues found.</div></div>"
 
