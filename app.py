@@ -151,26 +151,32 @@ if 'view_mode' not in st.session_state: st.session_state.view_mode = 'all'
 
 # --- Main UI ---
 # 1. Top Input Bar
-col_input1, col_input2 = st.columns([8, 1])
+col_input1, col_input2, col_input3 = st.columns([6, 2, 2])
 with col_input1:
-    url = st.text_input("URL", placeholder="https://actu.fr/app-ads.txt", label_visibility="collapsed")
+    url_input = st.text_input("URL", placeholder="https://actu.fr/", label_visibility="collapsed")
 with col_input2:
+    file_type = st.selectbox("File Type", ["app-ads.txt", "ads.txt"], label_visibility="collapsed")
+with col_input3:
     if st.button("Validate", type="primary", use_container_width=True):
-        if url:
+        if url_input:
             try:
+                domain = clean_url(url_input)
+                target_url = f"https://{domain}/{file_type}"
+                
                 # Use cloudscraper to bypass WAF/Cloudflare
                 scraper = cloudscraper.create_scraper(
                     browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
                 )
-                r = scraper.get(url, timeout=15)
+                r = scraper.get(target_url, timeout=15)
                 if r.status_code == 200:
                     st.session_state.raw_content = r.text
                     st.session_state.processed_content = None
                     st.session_state.view_mode = 'all'
+                    st.session_state.current_domain = domain
                 else:
-                    st.error(f"Error {r.status_code}: Could not fetch file. Access might be blocked.")
+                    st.error(f"Error {r.status_code}: Could not fetch file from {target_url}. Access might be blocked.")
             except Exception as e:
-                st.error(f"Failed to fetch: {str(e)}")
+                st.error(f"Failed to fetch {target_url}: {str(e)}")
 
 
 # 2. Results Section
@@ -178,7 +184,7 @@ content = st.session_state.processed_content if st.session_state.processed_conte
 
 if content:
     lines_meta, df_data, stats, logs = analyze_text(content)
-    domain_display = clean_url(url) if url else "Local File"
+    domain_display = st.session_state.get('current_domain', 'Local File')
 
     st.markdown(f"<h3 style='text-align: center; margin-top: 30px;'>Results for {domain_display}</h3>", unsafe_allow_html=True)
 
@@ -247,4 +253,4 @@ if content:
         st.markdown(log_html, unsafe_allow_html=True)
 
 else:
-    st.info("Please enter a URL above and click Validate to start.")
+    st.info("Please enter a domain above, select file type, and click Validate to start.")
