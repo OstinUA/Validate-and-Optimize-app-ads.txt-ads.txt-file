@@ -1,0 +1,72 @@
+.metric-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+.box {
+    flex: 1;
+    padding: 15px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    border: 1px solid transparent;
+}
+
+.box-blue {
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    color: #31708f;
+}
+
+.box-red {
+    background-color: #f2dede;
+    border-color: #ebccd1;
+    color: #a94442;
+}
+
+.box-yellow {
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    color: #8a6d3b;
+}
+
+.log-container {
+    height: 550px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.log-item {
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.log-error {
+    color: #cc0000;
+}
+
+.log-warning {
+    color: #b38600;
+}
+
+.log-success {
+    color: green;
+    font-weight: bold;
+}
+
+.icon-red {
+    color: #cc0000;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.icon-yellow {
+    color: #b38600;
+    font-weight: bold;
+    margin-right: 5px;
+}
